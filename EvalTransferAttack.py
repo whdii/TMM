@@ -23,6 +23,26 @@ from torchvision import transforms
 from tqdm import tqdm
 from transformers import BertForMaskedLM
 
+class Model:
+    def __init__(self, config, text_encoder_name, tokenizer):
+        self.config = config
+        self.tokenizer = tokenizer
+        self.model = ALBEF(config=config, text_encoder=text_encoder_name, tokenizer=tokenizer)
+        self.ref_model = BertForMaskedLM.from_pretrained(text_encoder_name)
+
+    def load_checkpoint(self, checkpoint_path):
+        checkpoint = torch.load(checkpoint_path, map_location='cpu')
+        state_dict = checkpoint.get('model', checkpoint)
+        self.model.load_state_dict(state_dict, strict=False)
+        print('Checkpoint loaded from %s' % checkpoint_path)
+
+    def to_device(self, device):
+        self.model = self.model.to(device)
+        self.ref_model = self.ref_model.to(device)
+
+    def inference(self, images, texts_input, use_embeds):
+        return self.model.inference(images, texts_input, use_embeds=use_embeds)
+
 class Evaluation:
     def __init__(self, model, ref_model, data_loader, tokenizer, device, config):
         self.model = model
